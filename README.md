@@ -1,12 +1,12 @@
 # Cấu trúc project
 home
-    venv
-    unimi (workspace)
-        apps
-        unimi (setting folder)
-        manage.py
-        db.sqlite3
-        requirements.txt
+- venv
+- unimi (workspace)
+    + apps
+    + unimi (setting folder)
+    + manage.py
+    + db.sqlite3
+    + requirements.txt
 
 # Tài khoản admin
     username: admin
