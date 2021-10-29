@@ -2,7 +2,10 @@ import logging
 from rest_framework import serializers
 from rest_framework.utils import field_mapping
 
-from apps.account.models import CustomUser, Employee
+from apps.account.models import (
+    CustomUser,
+    Customer, Employee, Shipper
+)
 from apps.core import responses, utils
 
 
@@ -60,9 +63,28 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 
+class CustomerSerializer(serializers.ModelSerializer):
+
+    class Meta:
+
+        model = Customer
+        fields = '__all__'
+        read_only_fields = ['user']
+
+
 class EmployeeSerializer(serializers.ModelSerializer):
 
     class Meta:
 
         model = Employee
         fields = '__all__'
+        read_only_fields = ['user']
+
+
+class ShipperSerializer(serializers.ModelSerializer):
+
+    class Meta:
+
+        model = Shipper
+        fields = '__all__'
+        read_only_fields = ['user']

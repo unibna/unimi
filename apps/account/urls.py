@@ -14,5 +14,8 @@ urlpatterns = [
     path('login', views.UserLoginAPI.as_view(), name='api-account-login'),
     path('<int:account_id>/get', views.UserAPI.as_view(), name='api-account-get'),
     path('<int:account_id>/update', views.UserAPI.as_view(), name='api-account-update'),
+
+    # employee info
+    path('employee/<int:employee_id>/get', views.EmployeeAPI.as_view(), name='api-employee-get'),
 ]
 urlpatterns += router.urls
