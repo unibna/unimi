@@ -1,27 +1,27 @@
-Cấu trúc project:
+# Cấu trúc project
 home
-----venv
-----unimi (workspace)
---------apps
---------unimi (setting folder)
---------manage.py
---------db.sqlite3
---------requirements.txt
+- venv
+- unimi (workspace)
+    + apps
+    + unimi (setting folder)
+    + manage.py
+    + db.sqlite3
+    + requirements.txt
 
-- Tài khoản admin
+# Tài khoản admin
     username: admin
     password: admin
 
-Chạy app:
+# Chạy app:
 - tải project về
     git clone
 - vào folder chứa workspace
 - tải venv: 
     python -m venv venv
 - kích hoạt venv
-    # Linux
+    + Linux
     source venv/bin/activate
-    # Window
+    + Window
     source venv/Script/activate
     hoặc
     source venv/Script/activate.ps1
@@ -29,7 +29,7 @@ Chạy app:
 - Tải dependencies
     pip3 install -r requirements.txt
 - chạy server
-    # 127.0.0.1:8000
+    + 127.0.0.1:8000
     python manage.py runserver
-    # xác định port
+    + xác định port
     python manage.py runserver 0.0.0.0:<port>
