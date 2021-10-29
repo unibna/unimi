@@ -64,6 +64,31 @@ class Store(models.Model):
 class JoinStore(models.Model):
 
     store = models.ForeignKey(Store, on_delete=models.CASCADE, null=True)
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, null=True)
+    employee = models.OneToOneField(Employee, on_delete=models.CASCADE)
     join_date = models.DateTimeField(auto_now_add=True)
     is_valid = models.BooleanField(default=False)
+
+
+class Menu(models.Model):
+
+    store = models.ForeignKey(Store, on_delete=models.CASCADE)
+    name = models.CharField(max_length=32, null=True)
+    is_active = models.BooleanField(default=False)
+    created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.store} - {self.name}"
+
+
+class Item(models.Model):
+
+    menu = models.ForeignKey(Menu, on_delete=models.CASCADE)
+    name = models.CharField(max_length=128)
+    is_active = models.BooleanField(default=False)
+    # image = models.ImageField(upload_to=ITEM_FOLDER)
+    price = models.FloatField(default=0)
+    rating = models.FloatField(default=0)
+    created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name

@@ -12,7 +12,7 @@ router = SimpleRouter()
 urlpatterns = [
     path('create', views.UserCreateAPI.as_view(), name='api-account-create'),
     path('login', views.UserLoginAPI.as_view(), name='api-account-login'),
-    path('get/<int:pk>', views.UserAPI.as_view(), name='api-account-get'),
-    path('update/<int:pk>', views.UserAPI.as_view(), name='api-account-update'),
+    path('<int:account_id>/get', views.UserAPI.as_view(), name='api-account-get'),
+    path('<int:account_id>/update', views.UserAPI.as_view(), name='api-account-update'),
 ]
 urlpatterns += router.urls

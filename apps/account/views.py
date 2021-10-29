@@ -79,7 +79,7 @@ class UserAPI(RetrieveUpdateAPIView):
         return user or None
 
     def retrieve(self, request, *args, **kwargs):
-        user = self.get_object(kwargs["pk"])
+        user = self.get_object(kwargs["account_id"])
 
         if not user:
             return responses.client_success({
@@ -92,7 +92,7 @@ class UserAPI(RetrieveUpdateAPIView):
         })
 
     def update(self, request, *args, **kwargs):
-        user = self.get_object(kwargs['pk'])
+        user = self.get_object(kwargs['account_id'])
 
         if not user:
             return responses.client_success({

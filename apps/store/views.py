@@ -1,6 +1,4 @@
 import logging
-import json
-from rest_framework import permissions
 
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, RetrieveUpdateAPIView, CreateAPIView
@@ -18,6 +16,7 @@ from apps.store import serializers
 from apps.store.models import (
     JoinStore,
     Store,
+    Menu, Item
 )
 from apps.core import responses
 
@@ -30,6 +29,49 @@ class EmployeeMixin:
         except:
             return None
 
+    def is_owner(self, empl):
+        if not empl:
+            print("User is not Employee")
+            return False
+        elif empl.employee_role != "owner":
+            print("Employee is not Owner")
+            return False
+        return True
+
+    def get_owner(self, user):
+        empl = self.get_employee(user)
+        if not empl:
+            print("User is not Employee")
+            raise responses.PERMISSION_DENIED
+        elif empl.employee_role != "owner":
+            print("Employee is not Owner")
+            raise responses.PERMISSION_DENIED
+        return empl
+
+    def get_free_employee(self, user):
+        empl = self.get_employee(user)
+        if not empl:
+            logging.error("User is not Employee")
+            print("User is not Employee")
+            raise responses.PERMISSION_DENIED
+        elif empl.store_set.all():
+            logging.error("Employee is in a store")
+            print("Employee is in a store")
+            raise responses.PERMISSION_DENIED
+        return empl
+
+    def get_hired_employee(self, user):
+        empl = self.get_employee(user)
+        if not empl:
+            logging.error("User is not Employee")
+            print("User is not Employee")
+            raise responses.PERMISSION_DENIED
+        elif not empl.store_set.all():
+            logging.error("Employee is not in a store")
+            print("Employee is in a store")
+            raise responses.PERMISSION_DENIED
+        return empl
+
 
 class StoreMixin:
 
@@ -37,7 +79,8 @@ class StoreMixin:
         try:
             return Store.objects.get(pk=pk)
         except:
-            return None
+            print("Store is not exist")
+            raise responses.NOT_FOUND
 
     def is_store_employee(self, store, empl):
         try:
@@ -49,6 +92,24 @@ class StoreMixin:
         except:
             return False
 
+    def is_store_owner(self, store, owner):
+        try:
+            if store.owner == owner:
+                return True
+        except:
+            return False
+
+
+class MenuMixin:
+
+    def get_menu(self, pk=None):
+        try:
+            return Menu.objects.get(pk=pk)
+        except:
+            print("Menu is not exist")
+            raise responses.client_error({
+                "errors": "Menu is not exist"
+            })
 
 
 class StoreCreateAPI(
@@ -60,15 +121,7 @@ class StoreCreateAPI(
     serializer_class = serializers.StoreCreateSerializer
 
     def post(self, request, *args, **kwargs):
-        empl = self.get_employee(request.user)
-        if not empl:
-            logging.error("User is not Employee")
-            print("User is not Employee")
-            raise responses.PERMISSION_DENIED
-        elif empl.store_set.all():
-            logging.error("Employee is in a store")
-            print("Employee is in a store")
-            raise responses.PERMISSION_DENIED
+        empl = self.get_free_employee(request.user)
 
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
@@ -89,20 +142,6 @@ class StoreCreateAPI(
             })
 
 
-class StoreListAPI(
-        ListAPIView
-):
-    serializer_class = serializers.StoreSerializer
-
-    def get(self, request, *args, **kwargs):
-        store_list = Store.objects.all()
-        return responses.client_success({
-            "stores": [
-                self.serializer_class(store).data for store in store_list
-            ]
-        })
-
-
 class StoreRetrieveUpdateAPI(
         RetrieveUpdateAPIView,
         EmployeeMixin,
@@ -114,7 +153,7 @@ class StoreRetrieveUpdateAPI(
 
     def retrieve(self, request, *args, **kwargs):
         empl = self.get_employee(request.user)
-        store = self.get_store(kwargs['pk'])
+        store = self.get_store(kwargs['store_id'])
 
         if not store:
             print("Store is not found")
@@ -133,17 +172,8 @@ class StoreRetrieveUpdateAPI(
 
     def update(self, request, *args, **kwargs):
         # check if request user is store's owner
-        empl = self.get_employee(request.user)
-        store = self.get_store(kwargs['pk'])
-        if not empl:
-            print("User is not Emloyee")
-            raise responses.PERMISSION_DENIED
-        elif store.owner != empl:
-            print("Employee is not Owner")
-            raise responses.PERMISSION_DENIED
-        elif not store:
-            print("Store is not found")
-            raise responses.NOT_FOUND
+        owner = self.get_owner(request.user)
+        store = self.get_store(kwargs['store_id'])
 
         serializer = self.serializer_class(store, data=request.data)
         if serializer.is_valid(raise_exception=True):
@@ -176,18 +206,9 @@ class JoinStoreAPI(
                 "errors": "Invalid parameters"
             })
 
-        empl = self.get_employee(request.user)
-        store = self.get_store(kwargs['pk'])
-        if not empl:
-            print("User is not Employee")
-            raise responses.PERMISSION_DENIED
-        elif empl.joinstore_set.all():
-            print("Employee is in a store")
-            raise responses.PERMISSION_DENIED
-        elif not store:
-            print("Store is not exist")
-            raise responses.NOT_FOUND
-        elif store.secret_key != sec_key:
+        empl = self.get_free_employee(request.user)
+        store = self.get_store(kwargs['store_id'])
+        if store.secret_key != sec_key:
             print("Invalid Secret Key")
             raise responses.client_error({
                 "errors": "Invalid Secret Key"
@@ -218,32 +239,232 @@ class JoinStoreAPI(
             })
 
 
+class MenuCreateAPI(
+        CreateAPIView,
+        EmployeeMixin,
+        StoreMixin
+):
+    permission_classes = [IsAuthenticated]
+    serializer_class = serializers.MenuCreateSerialzer
+
+    def post(self, request, *args, **kwargs):
+        owner = self.get_owner(request.user)
+        store = self.get_store(kwargs['store_id'])
+
+        if not self.is_store_owner(store, owner):
+            print(f"{owner} is not {store}'s Owner")
+
+        req_data = request.data.dict()
+        req_data["store"] = store
+
+        serializer = self.serializer_class(data=req_data)
+        if serializer.is_valid():
+            serializer.save()
+            return responses.client_success({
+                "menu": serializer.data
+            })
+
+        raise responses.client_error({
+            "errors": serializer.errors
+        })
+
+
+class MenuAPI(
+        RetrieveUpdateAPIView,
+        EmployeeMixin,
+        StoreMixin
+):
+
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    serializer_class = serializers.MenuSerializer
+
+    def get_object(self, pk=None):
+        try:
+            return Menu.objects.get(pk=pk)
+        except:
+            return None
+
+    def retrieve(self, request, *args, **kwargs):
+        store = self.get_store(kwargs['store_id'])
+        menu = self.get_object(kwargs['menu_id'])
+
+        if menu.store != store:
+            raise responses.client_error({
+                "errors": f"{menu} is not in {store}"
+            })
+
+        serializer = self.serializer_class(menu)
+        return responses.client_success({
+            "menu": serializer.data
+        })
+
+    def update(self, request, *args, **kwargs):
+        owner = self.get_owner(request.user)
+        store = self.get_store(kwargs['store_id'])
+        menu = self.get_object(kwargs['menu_id'])
+
+        if menu.store != store:
+            raise responses.client_error({
+                "errors": f"{menu} is not in {store}"
+            })
+
+        serializer = self.serializer_class(menu, data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return responses.client_success({
+                "menu": serializer.data
+            })
+        else:
+            raise responses.client_error({
+                "errors": serializer.errors
+            })
+
+
+class ItemCreateAPI(
+        CreateAPIView,
+        EmployeeMixin,
+        StoreMixin,
+        MenuMixin,
+):
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = serializers.ItemCreateSerializer
+
+    def post(self, request, *args, **kwargs):
+        owner = self.get_owner(request.user)
+        store = self.get_store(kwargs['store_id'])
+        menu = self.get_menu(kwargs['menu_id'])
+
+        if menu.store != store:
+            raise responses.client_error({
+                "errors": f"{menu} is not in {store}"
+            })
+
+        req_data = request.data.dict()
+        req_data['menu'] = menu.pk
+
+        ser = self.serializer_class(data=req_data)
+        if ser.is_valid(raise_exception=True):
+            ser.save()
+            return responses.client_success({
+                "item": ser.data
+            })
+        else:
+            return responses.client_error({
+                "errors": ser.errors
+            })
+
+
+class ItemAPI(
+        RetrieveUpdateAPIView,
+        EmployeeMixin,
+        StoreMixin,
+        MenuMixin,
+):
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = serializers.ItemSerializer
+
+    def get_object(self, pk=None):
+        try:
+            return Item.objects.get(pk=pk)
+        except:
+            return None
+
+    def retrieve(self, request, *args, **kwargs):
+        store = self.get_store(kwargs['store_id'])
+        menu = self.get_menu(kwargs['menu_id'])
+        item = self.get_object(kwargs['item_id'])
+
+        if not item:
+            raise responses.client_error({
+                "errors": "Item is not exist"
+            })
+        elif item.menu != menu:
+            raise responses.client_error({
+                "errors": f"{item} is not in {menu}"
+            })
+        elif menu.store != store:
+            raise responses.client_error({
+                "errors": f"{menu} is not in {store}"
+            })
+        
+        ser = self.serializer_class(item)
+        return responses.client_success({
+                "item": ser.data
+            })
+
+    def update(self, request, *args, **kwargs):
+        owner = self.get_owner(request.user)
+        store = self.get_store(kwargs['store_id'])
+        menu = self.get_menu(kwargs['menu_id'])
+        item = self.get_object(kwargs['item_id'])
+
+        ser = self.serializer_class(item, request.data)
+        if ser.is_valid(raise_exception=True):
+            ser.save()
+            return responses.client_success({
+                "item": ser.data
+            })
+        else:
+            return responses.client_error({
+                "errors": ser.errors
+            })
+
+
+class StoreListAPI(
+        ListAPIView
+):
+    serializer_class = serializers.StoreSerializer
+
+    def get(self, request, *args, **kwargs):
+        store_list = Store.objects.all()
+        return responses.client_success({
+            "stores": [
+                self.serializer_class(store).data for store in store_list
+            ]
+        })
+
+
+class StoreMenuListAPI(
+        ListAPIView,
+        StoreMixin,
+):
+
+    def get(self, request, *args, **kwargs):
+        store = self.get_store(kwargs['store_id'])
+
+        menu_list = store.menu_set.all()
+        return responses.client_success({
+            "store": serializers.StoreSerializer(store).data,
+            "menus": [
+                serializers.MenuSerializer(menu).data for menu in menu_list
+            ],
+        })
+
+
 class StoreEmployeeListAPI(
-    ListAPIView,
-    EmployeeMixin,
-    StoreMixin,
+        ListAPIView,
+        EmployeeMixin,
+        StoreMixin,
 ):
     permission_class = [IsAuthenticated,]
 
     def get(self, request, *args, **kwargs):
-        empl = self.get_employee(request.user)
-        if not empl:
-            print("User is not Employee")
-            raise responses.PERMISSION_DENIED
-        elif not empl.employee_role:
-            print("Employee is not in any store")
-            raise responses.PERMISSION_DENIED
+        empl = self.get_hired_employee(request.user)
 
         # get empl's store
         if empl.employee_role == "owner":
             store = Store.objects.get(owner=empl)
         else:
             store = JoinStore.objects.get(employee=empl).store
+
         # get store's employee list
         joinstore_list = store.joinstore_set.all()
         employee_list = [store.owner] + [js.employee for js in joinstore_list]
 
         return responses.client_success({
+            "store": serializers.StoreSerializer(store).data,
             "employees": [
                 {
                     "employee": EmployeeSerializer(empl).data,
@@ -252,61 +473,33 @@ class StoreEmployeeListAPI(
             ]
         })
 
-# class MenuCreateAPI(CreateAPIView, EmployeeMixin):
 
-#     permission_classes = [IsAuthenticated]
-#     serializer_class = serializers.MenuCreateSerialzer
+class MenuListAPI(
+        ListAPIView,
+        StoreMixin,
+        MenuMixin
+):
 
-#     def post(self, request):
-#         empl = self.get_employee(request.user)
-#         if empl.employee_role != "owner":
-#             raise responses.PERMISSION_DENIED
+    def get_object(self, pk=None):
+        try:
+            return Menu.objects.get(pk=pk)
+        except:
+            return None
 
-#         serializer = self.serializer_class(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return responses.client_success({
-#                 "menu": serializer.data
-#             })
+    def get(self, request, *args, **kwargs):
+        store = self.get_store(kwargs['store_id'])
+        menu = self.get_menu(kwargs['menu_id'])
 
-#         raise responses.client_error({
-#             "errors": serializer.errors
-#         })
+        if menu.store != store:
+            raise responses.client_error({
+                "errors": f"{menu} is not in {store}"
+            })
 
-
-# class MenuAPI(RetrieveUpdateAPIView, EmployeeMixin):
-
-#     permission_classes = [IsAuthenticatedOrReadOnly]
-#     serializer_class = serializers.MenuSerializer
-
-#     def get_object(self):
-#         try:
-#             return Menu.objects.get(pk=self.request.data["id"])
-#         except:
-#             raise responses.NOT_FOUND
-
-#     def retrieve(self, request, *args, **kwargs):
-#         menu = self.get_object()
-#         serializer = self.serializer_class(menu)
-
-#         return responses.client_success({
-#             "menu": serializer.data
-#         })
-
-#     def update(self, request, *args, **kwargs):
-#         empl = self.get_employee(request.user)
-#         if empl.employee_role != "owner":
-#             raise responses.PERMISSION_DENIED
-
-#         menu = self.get_object()
-#         serializer = self.serializer_class(menu, data=request.data)
-
-#         if serializer.is_valid(raise_exception=True):
-#             serializer.save()
-#             return responses.client_success({
-#                 "menu": serializer.data
-#             })
-#         else:
-#             raise responses.client_error({
-#                 "errors": serializer.errors
-#             })
+        item_list = menu.item_set.all()
+        return responses.client_success({
+            "store": serializers.StoreSerializer(store).data,
+            "menu": serializers.MenuSerializer(menu).data,
+            "items": [
+                serializers.ItemSerializer(item).data for item in item_list
+            ],
+        })
