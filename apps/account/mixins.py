@@ -1,7 +1,8 @@
 from apps.account.models import (
     Employee
 )
-
+from apps.core import responses
+from apps.store.models import JoinStore
 
 
 class EmployeeMixin:
@@ -14,43 +15,29 @@ class EmployeeMixin:
 
     def is_owner(self, empl):
         if not empl:
-            print("User is not Employee")
             return False
         elif empl.employee_role != "owner":
-            print("Employee is not Owner")
             return False
         return True
 
     def get_owner(self, user):
         empl = self.get_employee(user)
         if not empl:
-            print("User is not Employee")
             raise responses.PERMISSION_DENIED
         elif empl.employee_role != "owner":
-            print("Employee is not Owner")
             raise responses.PERMISSION_DENIED
         return empl
 
     def get_free_employee(self, user):
         empl = self.get_employee(user)
-        if not empl:
-            logging.error("User is not Employee")
-            print("User is not Employee")
-            raise responses.PERMISSION_DENIED
-        elif empl.store_set.all():
-            logging.error("Employee is in a store")
-            print("Employee is in a store")
-            raise responses.PERMISSION_DENIED
-        return empl
+        if not JoinStore.objects.filter(employee=empl):
+            return empl
+        return None
 
     def get_hired_employee(self, user):
         empl = self.get_employee(user)
         if not empl:
-            logging.error("User is not Employee")
-            print("User is not Employee")
             raise responses.PERMISSION_DENIED
         elif not empl.store_set.all():
-            logging.error("Employee is not in a store")
-            print("Employee is in a store")
             raise responses.PERMISSION_DENIED
         return empl

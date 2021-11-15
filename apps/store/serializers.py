@@ -5,6 +5,7 @@ from apps.store.models import (
     Store,
     JoinStore,
     Menu, Item,
+    ItemExtraGroup, IteamExtra
 )
 from apps.core import responses
 
@@ -78,7 +79,6 @@ class ItemCreateSerializer(serializers.ModelSerializer):
             'is_active',
             'price'
         ]
-        optional_fields = ['is_active']
         read_only_fields = ['id']
 
 
@@ -93,3 +93,34 @@ class ItemSerializer(serializers.ModelSerializer):
             'created',
             'rating'
         ]
+
+class ItemExtraGroupCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+
+        model = ItemExtraGroup
+        fields = '__all__'
+
+class ItemExtraGroupSerializer(serializers.ModelSerializer):
+
+    class Meta:
+
+        model = ItemExtraGroup
+        fields = '__all__'
+        read_only_fields = ['item']
+
+
+class ItemExtraCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+
+        model = IteamExtra
+        fields = '__all__'
+
+class ItemExtraSerializer(serializers.ModelSerializer):
+
+    class Meta:
+
+        model = IteamExtra
+        fields = '__all__'
+        read_only_fields = ['item_extra_group']

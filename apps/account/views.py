@@ -1,11 +1,9 @@
+from datetime import date
 import logging
 
-from django.http import JsonResponse
 from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 
-from rest_framework import status, exceptions
-from rest_framework import permissions
 from rest_framework.generics import CreateAPIView, RetrieveUpdateAPIView
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 
@@ -29,9 +27,11 @@ from apps.store.models import (
 from apps.store.serializers import (
     StoreSerializer
 )
+from apps.store.mixins import StoreMixin
 
 class UserCreateAPI(CreateAPIView):
 
+    allow_method = ['post']
     serializer_class = serializers.UserCreateSerializer
 
     def post(self, request):
@@ -79,7 +79,7 @@ class UserLoginAPI(TokenObtainPairView):
 
 class UserAPI(RetrieveUpdateAPIView):
 
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticated]
     serializer_class = serializers.UserSerializer
 
     def get_object(self, pk=None):
@@ -90,7 +90,11 @@ class UserAPI(RetrieveUpdateAPIView):
         return user or None
 
     def retrieve(self, request, *args, **kwargs):
-        user = self.get_object(kwargs["account_id"])
+        if not kwargs:
+            # return request user data
+            user = request.user
+        else:
+            user = self.get_object(kwargs["account_id"])
         data_res = {}
 
         if user:
@@ -140,32 +144,63 @@ class UserAPI(RetrieveUpdateAPIView):
 class EmployeeAPI(
     RetrieveUpdateAPIView,
     EmployeeMixin,
+    StoreMixin,
 ):
 
-    model = Employee
     permission_classes = [IsAuthenticated]
     serializer_class = serializers.EmployeeSerializer
 
-    def get_object(self, pk=None):
+    def get_object(self, empl_id):
         try:
-            return self.model.objects.get(pk=pk)
+            return Employee.objects.get(pk=empl_id)
         except:
             return None
 
     def retrieve(self, request, *args, **kwargs):
-        empl = self.get_object(kwargs["employee_id"])
-        data_res = {}
-        data_res["employee"] = serializers.EmployeeSerializer(empl).data
+        # check if user is employee
+        if request.user.account_role != "employee":
+            return responses.PERMISSION_DENIED
 
-        # get employee store
-        store_id = None
-        if empl.employee_role == "owner":
-            store_id = Store.objects.get(owner=empl).pk
-        elif empl.employee_role in EMPLOYEE_ROLES:
-            store_id = JoinStore.objects.get(employee=empl).store.pk
+        # init response
+        res = {}
 
-        data_res["store"] = {
-            "id": store_id
-        }
+        # classify action
+        if "store_id" in request.GET:
+            return self.get_store_employee(request, *args, **kwargs)
 
-        return responses.client_success(data_res)
+        # get employee data
+        if "employee_id" in kwargs:
+            empl = self.get_object(kwargs["employee_id"])
+        else:
+            empl = self.get_employee(request.user)
+        res["employee"] = serializers.EmployeeSerializer(empl).data
+
+        # get store data
+        store = self.get_employee_store(empl)
+        res["store"] = StoreSerializer(store).data
+        if store and not (empl and empl.user == request.user and store.owner == empl):
+            res["store"].pop("secret_key")
+
+        return responses.client_success(res)
+
+    def get_store_employee(self, request, *args, **kwargs):
+        store = self.get_store(request.GET["store_id"])
+        if not store:
+            raise responses.NOT_FOUND
+
+        # init response
+        res = {}
+
+        # get store data
+        res["store"] = StoreSerializer(store).data
+        empl = self.get_employee(request.user)
+        if store and not store.owner == empl:
+            res["store"].pop("secret_key")
+
+        # get employee
+        employee_list = [ins.employee for ins in JoinStore.objects.filter(store=store)]
+        res["employee"] = [
+            serializers.EmployeeSerializer(empl).data for empl in employee_list
+        ]
+
+        return responses.client_success(res)

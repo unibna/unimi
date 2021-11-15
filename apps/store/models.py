@@ -83,7 +83,7 @@ class Menu(models.Model):
 class Item(models.Model):
 
     menu = models.ForeignKey(Menu, on_delete=models.CASCADE)
-    name = models.CharField(max_length=128)
+    name = models.CharField(max_length=128, null=True)
     is_active = models.BooleanField(default=False)
     # image = models.ImageField(upload_to=ITEM_FOLDER)
     price = models.FloatField(default=0)
@@ -92,3 +92,29 @@ class Item(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class ItemExtraGroup(models.Model):
+
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    name = models.CharField(max_length=32, null=True)
+    is_active = models.BooleanField(default=False)
+
+
+class IteamExtra(models.Model):
+
+    item_extra_group = models.ForeignKey(
+        ItemExtraGroup,
+        on_delete=models.CASCADE
+    )
+    name = models.CharField(max_length=64, null=True)
+    value = models.CharField(max_length=128, null=True)
+    price = models.FloatField(default=0)
+    # image = models.ImageField(upload_to=ITEM_EXTRA_FOLDER)
+    is_active = models.BooleanField(default=False)
+
+    # fix the typing error of class name
+    class Meta:
+
+        verbose_name = 'ItemExtra'
+        verbose_name_plural = 'ItemExtra'

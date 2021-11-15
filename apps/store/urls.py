@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, re_path
 from rest_framework.routers import SimpleRouter
 
 from . import views
@@ -8,26 +8,27 @@ router = SimpleRouter()
 
 urlpatterns = [
     # store
-    path('create', views.StoreCreateAPI.as_view(), name='api-store-create'),
-    path('list', views.StoreListAPI.as_view(), name='api-store-list'),
-    path('<int:store_id>/get', views.StoreRetrieveUpdateAPI.as_view(), name='api-store-get'),
-    path('<int:store_id>/update', views.StoreRetrieveUpdateAPI.as_view(), name='api-store-update'),
+    path('store/', views.StoreAPI.as_view()),
+    path('store/<int:store_id>', views.StoreAPI.as_view()),
 
-    # employee join a store
-    path('<int:store_id>/join', views.JoinStoreAPI.as_view(), name='api-store-join'),
-    # list all employee in a store (only employee users can use)
-    path('<int:store_id>/employee/list', views.StoreEmployeeListAPI.as_view(), name='api-store-employee-list'),
+    # join store
+    path('store/join', views.JoinStoreAPI.as_view()),
 
     # menu
-    path('<int:store_id>/menu/create', views.MenuCreateAPI.as_view(), name='api-store-menu-create'),
-    path('<int:store_id>/menu/list', views.StoreMenuListAPI.as_view(), name='api-store-menu-list'),
-    path('<int:store_id>/menu/<int:menu_id>/get', views.MenuAPI.as_view(), name='api-store-menu-get'),
-    path('<int:store_id>/menu/<int:menu_id>/update', views.MenuAPI.as_view(), name='api-store-menu-update'),
+    path('menu/', views.MenuAPI.as_view()),
+    path('menu/<int:menu_id>', views.MenuAPI.as_view()),
 
     # item
-    path('<int:store_id>/menu/<int:menu_id>/item/create', views.ItemCreateAPI.as_view(), name='api-store-item-create'),
-    path('<int:store_id>/menu/<int:menu_id>/item/list', views.MenuListAPI.as_view(), name='api-store-item-list'),
-    path('<int:store_id>/menu/<int:menu_id>/item/<int:item_id>/get', views.ItemAPI.as_view(), name='api-store-item-get'),
-    path('<int:store_id>/menu/<int:menu_id>/item/<int:item_id>/update', views.ItemAPI.as_view(), name='api-store-item-update'),
+    path('item/', views.ItemAPI.as_view()),
+    path('item/<int:item_id>', views.ItemAPI.as_view()),
+
+    # extra group
+    path('item-extra-group', views.ItemExtraGroupAPI.as_view()),
+    path('item-extra-group/<int:item_extra_group_id>', views.ItemExtraGroupAPI.as_view()),
+
+    # extra
+    path('item-extra', views.ItemExtraAPI.as_view()),
+    path('item-extra/<int:item_extra_id>', views.ItemExtraAPI.as_view()),
+
 ]
 urlpatterns += router.urls
