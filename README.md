@@ -7,16 +7,18 @@ home
     + manage.py
     + db.sqlite3
     + requirements.txt
+# Tạo tài khoản admin:
+python manager.py createsuperuser
 
 # Tài khoản admin
-    username: admin
+    email   : admin@gmail.com
     password: admin
 
 # Chạy app:
 - tải project về
     git clone
 - vào folder chứa workspace
-- tải venv: 
+- tải venv: username
     python -m venv venv
 - kích hoạt venv
     + Linux
