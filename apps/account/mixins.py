@@ -1,6 +1,8 @@
 from apps.account.models import (
+    Customer, CustomerAddress,
     Employee
 )
+from apps.account.serializers import CustomerAddressSerializer
 from apps.core import responses
 from apps.store.models import JoinStore
 
@@ -41,3 +43,18 @@ class EmployeeMixin:
         elif not empl.store_set.all():
             raise responses.PERMISSION_DENIED
         return empl
+
+
+class CustomerMixin:
+
+    def get_customer(self, user=None):
+        try:
+            return Customer.objects.get(user=user)
+        except:
+            return None
+
+    def get_customer_address(self, pk=None):
+        try:
+            return CustomerAddress.objects.get(pk=pk)
+        except:
+            return None

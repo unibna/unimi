@@ -1,8 +1,11 @@
 from datetime import date
 import logging
+import re
 
 from django.contrib.auth.hashers import make_password
+from django.db.models.query import RawQuerySet
 from django.utils import timezone
+from rest_framework import permissions
 
 from rest_framework.generics import CreateAPIView, RetrieveUpdateAPIView
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
@@ -11,7 +14,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from apps.account import serializers
-from apps.account.mixins import EmployeeMixin
+from apps.account.mixins import EmployeeMixin, CustomerMixin
 from apps.account.models import (
     CustomUser,
     EMPLOYEE_ROLES,
@@ -204,3 +207,92 @@ class EmployeeAPI(
         ]
 
         return responses.client_success(res)
+
+
+class CustomerAddressAPI(
+    RetrieveUpdateAPIView,
+    CreateAPIView,
+    CustomerMixin
+):
+    permissions_classes = [IsAuthenticatedOrReadOnly]
+
+    def get(self, request, *args, **kwargs):
+        if "address_id" in kwargs:
+            res = self.retrieve_address(request, *args, **kwargs)
+        else:
+            res = self.list_address(request, *args, **kwargs)
+
+        return responses.client_success(res)
+
+    def list_address(self, request, *args, **kwargs):
+        customer = self.get_customer(request.user)
+        if not customer:
+            raise responses.PERMISSION_DENIED
+
+        address_list = customer.customeraddress_set.all()
+        return {
+            # "customer": serializers.CustomerSerializer(customer).data,
+            "customer_adress": [
+                serializers.CustomerAddressSerializer(addr).data for addr in address_list
+            ]
+        }
+
+    def retrieve_address(self, request, *args, **kwargs):
+        customer = self.get_customer(request.user)
+        if not customer:
+            raise responses.PERMISSION_DENIED
+
+        address = self.get_customer_address(kwargs["address_id"])
+        # check customer permission
+        if address.customer != customer:
+            raise responses.PERMISSION_DENIED
+
+        if not address:
+            raise responses.NOT_FOUND
+
+        return serializers.CustomerAddressSerializer(address).data
+
+    def post(self, request, *args, **kwargs):
+        customer = self.get_customer(request.user)
+        if not customer:
+            raise responses.PERMISSION_DENIED
+
+        req_data = request.data.dict()
+        req_data["customer"] = customer.pk
+
+        serializer = serializers.CustomerAddressCreateSerializer(data=req_data)
+        if serializer.is_valid():
+            serializer.save()
+            return responses.client_success({
+                "customer_address": serializer.data
+            })
+        else:
+            raise responses.client_error({
+                "errors": serializer.errors
+            })
+
+    def put(self, request, *args, **kwargs):
+        if "address_id" not in kwargs:
+            raise responses.BAD_REQUEST
+
+        customer = self.get_customer(request.user)
+        address = self.get_customer_address(kwargs["address_id"])
+
+        if not customer:
+            raise responses.PERMISSION_DENIED
+        elif not address:
+            raise responses.BAD_REQUEST
+
+        serializer = serializers.CustomerAddressSerializer(
+            instance=address,
+            data=request.data
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return responses.client_success({
+                "customer_address": serializer.data
+            })
+        else:
+            raise responses.client_error({
+                "errors": serializer.errors
+            })

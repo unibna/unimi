@@ -1,10 +1,13 @@
 import logging
+import re
+from django.shortcuts import resolve_url
 from rest_framework import serializers
 from rest_framework.utils import field_mapping
 
 from apps.account.models import (
     CustomUser,
-    Customer, Employee, Shipper
+    Customer, CustomerAddress,
+    Employee, Shipper
 )
 from apps.core import responses, utils
 
@@ -70,6 +73,23 @@ class CustomerSerializer(serializers.ModelSerializer):
         model = Customer
         fields = '__all__'
         read_only_fields = ['user']
+
+
+class CustomerAddressCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+
+        model = CustomerAddress
+        fields = '__all__'
+
+
+class CustomerAddressSerializer(serializers.ModelSerializer):
+
+    class Meta:
+
+        model = CustomerAddress
+        fields = '__all__'
+        read_only_fields = ['customer']
 
 
 class EmployeeSerializer(serializers.ModelSerializer):

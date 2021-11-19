@@ -126,7 +126,6 @@ class JoinStoreAPI(
 ):
 
     permission_classes = [IsAuthenticated,]
-    serializer_class = serializers.JoinStoreSerializer
 
     def post(self, request, *args, **kwargs):
         # valid request data
@@ -137,7 +136,9 @@ class JoinStoreAPI(
 
         empl = self.get_free_employee(request.user)
         if not empl:
-            raise responses.PERMISSION_DENIED
+            raise responses.client_error({
+                "errors": "You are in a store"
+            })
 
         # get store by secret key
         secret_key = request.POST["secret_key"]
@@ -151,7 +152,7 @@ class JoinStoreAPI(
         if employee_role != "staff" and employee_role != "manager":
             raise responses.BAD_REQUEST
 
-        serializer = self.serializer_class(data={
+        serializer = serializers.JoinStoreSerializer(data={
             "employee": empl.pk,
             "store": store.pk,
         })
@@ -168,6 +169,7 @@ class JoinStoreAPI(
             raise responses.client_error({
                 "errors": serializer.errors
             })
+
 
 class MenuAPI(
         RetrieveUpdateAPIView,
@@ -466,7 +468,7 @@ class ItemExtraAPI(
         return {
             "item_extra_group": serializers.ItemExtraGroupCreateSerializer(extra_group).data,
             "item_extras": [
-                serializers.ItemExtraSeirializer(extra).data for extra in extra_list
+                serializers.ItemExtraSerializer(extra).data for extra in extra_list
             ]
         }
 
@@ -474,7 +476,8 @@ class ItemExtraAPI(
         # get extra
         extra = self.get_extra(kwargs["item_extra_id"])
         return {
-            "item_extra": serializers.ItemExtraSeirializer(extra).data
+            "item": serializers.ItemSerializer(extra.item_extra_group.item).data,
+            "item_extra": serializers.ItemExtraSerializer(extra).data
         }
 
     def post(self, request, *args, **kwargs):
