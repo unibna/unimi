@@ -18,7 +18,7 @@ python manager.py createsuperuser
 - tải project về
     git clone
 - vào folder chứa workspace
-- tải venv: username
+- tải venv:
     python -m venv venv
 - kích hoạt venv
     + Linux
