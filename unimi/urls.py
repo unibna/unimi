@@ -15,6 +15,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf.urls.static import static
+from . import settings
 
 VERSION = 'v1'
 
@@ -23,4 +25,4 @@ urlpatterns = [
     path(f'api/{VERSION}/', include('apps.account.urls')),
     path(f'api/{VERSION}/', include('apps.store.urls')),
     path(f'api/{VERSION}/', include('apps.order.urls')),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

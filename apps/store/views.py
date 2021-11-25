@@ -2,6 +2,7 @@ from rest_framework.exceptions import NotFound
 from rest_framework.generics import RetrieveUpdateAPIView, CreateAPIView
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.settings import reload_api_settings
 
 from apps.account.models import (
     Employee,
@@ -75,7 +76,7 @@ class StoreAPI(
         elif "item_id" in request.GET:
             pass
         else:
-            res["menus"] = [
+            res["store"]["menus"] = [
                 serializers.MenuSerializer(menu).data for menu in store.menu_set.all()
             ]
         
@@ -287,13 +288,23 @@ class ItemAPI(
         item = self.get_item(kwargs["item_id"])
         if not item:
             raise responses.NOT_FOUND
-
-        # get extra group
-        # get extra
-
-        return {
+        res = {
             "item": serializers.ItemSerializer(item).data
         }
+
+        # get extra group
+        extra_group_list = item.itemextragroup_set.all()
+        extra_groups = [
+            serializers.ItemExtraGroupSerializer(group).data for group in extra_group_list
+        ]
+        for i in range(len(extra_groups)):
+            extra_groups[i]["item_extras"] = [
+                serializers.ItemExtraSerializer(extra).data for extra in extra_group_list[i].iteamextra_set.all()
+            ]
+
+        res["item"]["item_extra_groups"] = extra_groups
+
+        return res
 
     def post(self, request, *args, **kwargs):
         # valid request params
@@ -325,11 +336,11 @@ class ItemAPI(
         item = self.get_item(kwargs['item_id'])
 
         # verify owner permission
-        if item.menu.store != Store.objects.get(owner=owner):
+        if item.menu.store.owner != owner:
             raise responses.PERMISSION_DENIED
 
         ser = serializers.ItemSerializer(item, request.data)
-        if ser.is_valid(raise_exception=True):
+        if ser.is_valid():
             ser.save()
             return responses.client_success({
                 "item": ser.data
@@ -366,29 +377,26 @@ class ItemExtraGroupAPI(
         extra_group = self.get_extra_group(kwargs["item_extra_group_id"])
         if not extra_group:
             raise responses.NOT_FOUND
-
-        # get group's item extras
-        extra_list = extra_group.iteamextra_set.all()
-        return {
-            "item_extra_groups": serializers.ItemExtraGroupSerializer(extra_group).data,
-            "item_extras": [
-                serializers.ItemExtraSerializer(extra).data for extra in extra_list
-            ]
+        res = {
+            "item_extra_group": serializers.ItemExtraGroupSerializer(extra_group).data
         }
+        
+        res["item_extra_group"]["item_extras"] = [
+            serializers.ItemExtraSerializer(extra).data for extra in extra_group.iteamextra_set.all()
+        ]
+        return res
 
     def list_item_extra_group(self, request, *args, **kwargs):
         item = self.get_item(request.GET["item"])
         if not item:
             raise responses.NOT_FOUND
-
-        # get item's extra group
-        extra_group_list = item.itemextragroup_set.all()
-        return {
+        res = {
             "item": serializers.ItemSerializer(item).data,
-            "item_extra_groups": [
-                serializers.ItemExtraGroupSerializer(group).data for group in extra_group_list
-            ]
         }
+        res["item"]["item_extra_groups"] = [
+            serializers.ItemExtraGroupSerializer(group).data for group in item.itemextragroup_set.all()
+        ]
+        return res
 
     def post(self, request, *args, **kwargs):
         if "item" not in request.POST:
@@ -462,21 +470,20 @@ class ItemExtraAPI(
         extra_group = self.get_extra_group(request.GET["item-extra-group"])
         if not extra_group:
             raise responses.NOT_FOUND
-
-        # get all extra
-        extra_list = extra_group.iteamextra_set.all()
-        return {
+        res = {
             "item_extra_group": serializers.ItemExtraGroupCreateSerializer(extra_group).data,
-            "item_extras": [
-                serializers.ItemExtraSerializer(extra).data for extra in extra_list
-            ]
         }
+        # get all extra
+        res["item_extra_group"]["item_extras"] = [
+            serializers.ItemExtraSerializer(extra).data for extra in extra_group.iteamextra_set.all()
+        ]
+        return res
 
     def retrieve_item_extra(self, request, *args, **kwargs):
         # get extra
         extra = self.get_extra(kwargs["item_extra_id"])
         return {
-            "item": serializers.ItemSerializer(extra.item_extra_group.item).data,
+            # "item": serializers.ItemSerializer(extra.item_extra_group.item).data,
             "item_extra": serializers.ItemExtraSerializer(extra).data
         }
 

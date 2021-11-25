@@ -24,6 +24,8 @@ order_status_choices = [
     ['done', 'done'],
 ]
 
+FEEDBACK_FOLDER = 'order/feedback/'
+
 
 class Order(models.Model):
 
@@ -84,3 +86,4 @@ class Feedback(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
     content = models.CharField(max_length=512, null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True)
+    image = models.ImageField(upload_to=FEEDBACK_FOLDER, null=True, blank=True)

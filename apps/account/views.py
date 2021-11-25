@@ -32,6 +32,7 @@ from apps.store.serializers import (
 )
 from apps.store.mixins import StoreMixin
 
+
 class UserCreateAPI(CreateAPIView):
 
     allow_method = ['post']
@@ -104,13 +105,14 @@ class UserAPI(RetrieveUpdateAPIView):
             data_res["user"] = self.serializer_class(user).data
             if user.account_role == "customer":
                 cus = Customer.objects.get(user=user)
-                data_res["customer"] = serializers.CustomerSerializer(cus).data
+                account_role_data = serializers.CustomerSerializer(cus).data
             elif user.account_role == "employee":
                 empl = Employee.objects.get(user=user)
-                data_res["employee"] = serializers.EmployeeSerializer(empl).data
+                account_role_data = serializers.EmployeeSerializer(empl).data
             elif user.account_role == "shipper":
                 shipper = Shipper.objects.get(user=user)
-                data_res["shipper"] = serializers.ShipperSerializer(shipper).data
+                account_role_data = serializers.ShipperSerializer(shipper).data
+            data_res["user"]["account_role_info"] = account_role_data
 
         return responses.client_success(data_res)
 
@@ -180,9 +182,9 @@ class EmployeeAPI(
 
         # get store data
         store = self.get_employee_store(empl)
-        res["store"] = StoreSerializer(store).data
+        res["employee"]["store"] = StoreSerializer(store).data
         if store and not (empl and empl.user == request.user and store.owner == empl):
-            res["store"].pop("secret_key")
+            res["employee"]["store"].pop("secret_key")
 
         return responses.client_success(res)
 
@@ -202,7 +204,7 @@ class EmployeeAPI(
 
         # get employee
         employee_list = [ins.employee for ins in JoinStore.objects.filter(store=store)]
-        res["employee"] = [
+        res["store"]["employees"] = [
             serializers.EmployeeSerializer(empl).data for empl in employee_list
         ]
 

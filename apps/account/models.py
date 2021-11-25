@@ -24,6 +24,8 @@ EMPLOYEE_ROLES_CHOICE = [
     ["owner", "owner"]
 ]
 
+ACCOUNT_AVATAR_FOLDER = 'account/avatar/'
+
 
 class CustomUser(AbstractUser):
 
@@ -31,6 +33,7 @@ class CustomUser(AbstractUser):
     is_valid = models.BooleanField(default=False)
     phone = models.CharField(max_length=11, default="")
     account_role = models.CharField(max_length=12, choices=ACCOUNT_ROLES_CHOICE)
+    avatar = models.ImageField(upload_to=ACCOUNT_AVATAR_FOLDER, null=True, blank=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

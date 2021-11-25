@@ -26,7 +26,8 @@ class UserSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'email', 'username',
             'is_valid', 'account_role',
-            'first_name', 'last_name', 'phone'
+            'first_name', 'last_name', 'phone',
+            'avatar'
         )
         read_only_fields = (
             'email', 'username',
@@ -34,24 +35,25 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
     def validate(self, attrs):
-        phone = attrs.get('phone', None)
-        first_name = attrs.get('first_name', None)
-        last_name = attrs.get('last_name', None)
+        # phone = attrs.get('phone', None)
+        # first_name = attrs.get('first_name', None)
+        # last_name = attrs.get('last_name', None)
 
-        error_list = []
-        if not utils.is_phone(phone):
-            error_list.append("phone")
-        if not utils.is_valid_name(first_name):
-            error_list.append("first_name")
-        if not utils.is_valid_name(last_name):
-            error_list.append("last_name")
+        # error_list = []
+        # if not utils.is_phone(phone):
+        #     error_list.append("phone")
+        # if not utils.is_valid_name(first_name):
+        #     error_list.append("first_name")
+        # if not utils.is_valid_name(last_name):
+        #     error_list.append("last_name")
 
-        if error_list:
-            raise responses.client_error({
-                "Invalid Parameters": error_list
-            })
-        else:
-            return attrs
+        # if error_list:
+        #     raise responses.client_error({
+        #         "Invalid Parameters": error_list
+        #     })
+        # else:
+        #     return attrs
+        return attrs
 
     def update(self, instance, validated_data):
         user = super().update(instance, validated_data)

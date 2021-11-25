@@ -42,25 +42,21 @@ class OrderAPI(
 
     def retrieve_order(self, request, *args, **kwargs):
         order = self.get_order(kwargs["order_id"])
-        order_items = order.orderitem_set.all()
-
-        extra_list = []
-        order_item_list = []
-        for order_item in order_items:
-            extras = order_item.orderitemextra_set.all()
-            order_item_list.append(serializers.OrderItemSerializer(order_item).data)
-
-            for extra in extras:
-                extra_list.append(serializers.OrderItemExtraSerializer(extra).data)
-
         if not order:
             raise responses.NOT_FOUND
+        res = {"order": serializers.OrderSerializer(order).data}
+        
+        order_item_list = order.orderitem_set.all()
+        order_items = [
+            serializers.OrderItemSerializer(item).data for item in order_item_list
+        ]
+        for i in range(len(order_items)):
+            order_items[i]["order_item_extras"] = [
+                serializers.OrderItemExtraSerializer(extra).data for extra in order_item_list[i].orderitemextra_set.all()
+            ]
+        res["order"]["order_items"] = order_items
 
-        return {
-            "order": serializers.OrderSerializer(order).data,
-            "order_items": order_item_list,
-            "order_item_extras": extra_list,
-        }
+        return res
 
     def list_order(self, request, *args, **kwargs):
         # list order by status
@@ -177,10 +173,12 @@ class OrderItemAPI(
         item = self.get_order_item(kwargs["order_item_id"])
         if not item:
             raise responses.NOT_FOUND
+        res = {"order_item": serializers.OrderItemSerializer(item).data}
+        res["order_item"]["order_item_extras"] = [
+            serializers.OrderItemExtraSerializer(extra).data for extra in item.orderitemextra_set.all()
+        ]
 
-        return {
-            "item": serializers.OrderItemSerializer(item).data
-        }
+        return res
 
     def list(self, request, *args, **kwargs):
         if "order" not in request.GET:
@@ -310,25 +308,21 @@ class OrderItemExtraAPI(
             order = self.get_order(request.GET["order"])
             if not order:
                 raise responses.NOT_FOUND
-
-            item_list = order.orderitem_set.all()
-            extra_list = []
-            for item in item_list:
-                item_extras = item.orderitemextra_set.all()
-
-                for extra in item_extras:
-                    extra_list.append(serializers.OrderItemExtraSerializer(extra).data)
-
             res["order"] = serializers.OrderSerializer(order).data
-            res["order_items"] = [serializers.OrderItemSerializer(item).data for item in item_list]
-            res["order_item_extras"] = extra_list
+            order_item_list = order.orderitem_set.all()
+            res["order"]["order_items"] = [
+                serializers.OrderItemSerializer(item).data for item in order_item_list
+            ]
+            for i in range(len(order_item_list)):
+                res["order"]["order_items"][i]["order_item_extras"] = [
+                    serializers.OrderItemExtraSerializer(extra).data for extra in order_item_list[i].orderitemextra_set.all()
+                ]
         elif "order-item" in request.GET:
             item = self.get_order_item(request.GET["order-item"])
             extra_list = item.orderitemextra_set.all()
 
-            res["order"] = serializers.OrderSerializer(item.order).data
             res["order_items"] = serializers.OrderItemSerializer(item).data
-            res["order_item_extras"] = [
+            res["order_items"]["order_item_extras"] = [
                 serializers.OrderItemExtraSerializer(extra) for extra in extra_list
             ]
 

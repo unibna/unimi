@@ -31,6 +31,8 @@ class Store(models.Model):
     name = models.CharField(max_length=64, null=True)
     email = models.EmailField(max_length=64, null=True)
     phone = models.CharField(max_length=11, null=True)
+    description = models.CharField(max_length=512, null=True)
+    logo = models.ImageField(upload_to=LOGO_FOLDER, null=True, blank=True)
     address = models.CharField(max_length=128, null=True)
     # location = PointField(null=True)
     logo = models.ImageField(upload_to=LOGO_FOLDER, null=True)
@@ -85,7 +87,7 @@ class Item(models.Model):
     menu = models.ForeignKey(Menu, on_delete=models.CASCADE)
     name = models.CharField(max_length=128, null=True)
     is_active = models.BooleanField(default=False)
-    # image = models.ImageField(upload_to=ITEM_FOLDER)
+    image = models.ImageField(upload_to=ITEM_FOLDER, null=True, blank=True)
     price = models.FloatField(default=0)
     rating = models.FloatField(default=0)
     created = models.DateTimeField(auto_now_add=True)
@@ -110,7 +112,7 @@ class IteamExtra(models.Model):
     name = models.CharField(max_length=64, null=True)
     value = models.CharField(max_length=128, null=True)
     price = models.FloatField(default=0)
-    # image = models.ImageField(upload_to=ITEM_EXTRA_FOLDER)
+    image = models.ImageField(upload_to=ITEM_EXTRA_FOLDER, null=True, blank=True)
     is_active = models.BooleanField(default=False)
 
     # fix the typing error of class name
