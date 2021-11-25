@@ -12,10 +12,15 @@ from apps.store.models import (
 
 
 order_status_choices = [
+    # create successfully
     ['created', 'created'],
+    # by shipper
     ['confirm', 'confirm'],
+    # by store
     ['doing', 'doing'],
+    # by shipper
     ['delivery', 'delivery'],
+    # by shipper
     ['done', 'done'],
 ]
 
@@ -31,6 +36,7 @@ class Order(models.Model):
 
     def __str__(self):
         return f"{self.status}-{self.customer.user.email}-{self.store.name}"
+
 
 class OrderItem(models.Model):
 
@@ -61,5 +67,20 @@ class GetOrder(models.Model):
     # cost = items cost + delivery fee
     cost = models.FloatField(default=0)
     distance = models.FloatField(default=0)
+    # minute
     estimate_time = models.TimeField()
     is_successful = models.BooleanField(default=False)
+
+
+class Payment(models.Model):
+
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    is_complete = models.BooleanField(default=False)
+    created = models.DateTimeField(auto_now_add=True)
+
+
+class Feedback(models.Model):
+
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    content = models.CharField(max_length=512, null=True, blank=True)
+    created = models.DateTimeField(auto_now_add=True)

@@ -20,3 +20,9 @@ class OrderMixin:
             return OrderItemExtra.objects.get(pk=pk)
         except:
             return None
+
+    def get_taken_order(self, pk=None):
+        try:
+            return GetOrder.objects.get(pk=pk)
+        except:
+            return None

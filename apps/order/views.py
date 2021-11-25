@@ -1,11 +1,12 @@
-import re
+from django.shortcuts import resolve_url
 from rest_framework import permissions
 from rest_framework.exceptions import NotFound
-from rest_framework.generics import RetrieveUpdateAPIView, CreateAPIView
+from rest_framework.generics import RetrieveAPIView, RetrieveUpdateAPIView, CreateAPIView
 from rest_framework.permissions import NOT, OR, IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.serializers import raise_errors_on_nested_writes
 from apps.account.models import Employee
+from apps.account.serializers import CustomerSerializer, ShipperSerializer
 
 from apps.order import serializers
 from apps.order.mixins import *
@@ -15,6 +16,7 @@ from apps.core import responses
 from apps.account.mixins import (
     CustomerMixin,
     EmployeeMixin,
+    ShipperMixin,
 )
 from apps.store.mixins import ItemMixin, StoreMixin
 
@@ -423,3 +425,216 @@ class OrderItemExtraAPI(
             raise responses.client_error({
                 "errors": serializer.errors
             })
+
+
+class GetOrderAPI(
+    RetrieveUpdateAPIView,
+    CreateAPIView,
+    ShipperMixin,
+    OrderMixin,
+    EmployeeMixin,
+    StoreMixin,
+    CustomerMixin
+):
+
+    permissions_classes = [IsAuthenticated]
+
+    def is_related_user(self, request, taken_order):
+        if request.user.account_role == "customer":
+            if taken_order.order.customer.user != request.user:
+                return False
+        elif request.user.account_role == "shipper":
+            if taken_order.shipper.user != request.user:
+                return False
+        elif request.user.account_role == "employee":
+            empl = self.get_employee(request.user)
+            store = self.get_employee_store(empl)
+            if not store or store != taken_order.order.store:
+                return False
+        else:
+            return False
+        return True
+
+    def get(self, request, *args, **kwargs):
+        if "get_order_id" in kwargs:
+            res = self.retrieve(request, *args, **kwargs)
+        else:
+            res = self.list(request, *args, **kwargs)
+
+        return responses.client_success(res)
+
+    def retrieve(self, request, *args, **kwargs):
+        taken_order = self.get_taken_order(kwargs["get_order_id"])
+        if not taken_order:
+            raise responses.NOT_FOUND
+
+        if not self.is_related_user(request.user, taken_order):
+            raise responses.PERMISSION_DENIED
+
+        return {
+            "get_order": serializers.GetOrderSerializer(taken_order).data,
+            "order": serializers.OrderSerializer(taken_order.order).data,
+            "shipper": ShipperSerializer(taken_order.shipper).data,
+            "customer": CustomerSerializer(taken_order.order.customer).data,
+        }
+
+    def list(self, request, *args, **kwargs):
+        params_len = len(request.GET)
+        print(params_len)
+
+        if params_len == 0:
+            res = self.list_all(request, *args, **kwargs)
+        if "shipper" in request.GET and params_len == 1:
+            res = self.list_by_shipeer(request, *args, **kwargs)
+        elif "customer" in request.GET and params_len == 1:
+            res = self.list_by_customer(request, *args, **kwargs)
+        elif "order" in request.GET and params_len == 1:
+            pass
+        else:
+            raise responses.BAD_REQUEST
+
+        return responses.client_success(res)
+
+    def list_all(self, request, *args, **kwargs):
+        # classify user by account role
+        if request.user.account_role == "customer":
+            customer = self.get_customer(request.user)
+            if not customer:
+                raise responses.PERMISSION_DENIED
+            order_list = customer.order_set.all()
+            get_order_list = [order.getorder_set.all() for order in order_list]
+        elif request.user.account_role == "shipper":
+            shipper = self.get_shipper(request.user)
+            if not shipper:
+                raise responses.PERMISSION_DENIED
+            get_order_list = shipper.getorder_set.all()
+            order_list = [ins.order for ins in get_order_list]
+        elif request.user.account_role == "employee":
+            empl = self.get_employee(request.user)
+            store = self.get_employee_store(empl)
+            if not store:
+                raise responses.PERMISSION_DENIED
+            order_list = store.order_set.all()
+            get_order_list = [order.getorder_set.all() for order in order_list]
+        else:
+            raise responses.PERMISSION_DENIED
+
+        order_list = list(np.array(order_list).flat)
+        get_order_list = list(np.array(get_order_list).flat)
+
+        return {
+            "orders": [
+                serializers.OrderSerializer(order).data for order in order_list
+            ],
+            "get_orders": [
+                serializers.GetOrderSerializer(get_order).data for get_order in get_order_list
+            ]
+        }
+
+
+    def list_by_shipper(self, request, *args, **kwargs):
+        pass
+
+    def list_by_customer(self, request, *args, **kwargs):
+        pass
+
+    def post(self, request, *args, **kwargs):
+        shipper = self.get_shipper(request.user)
+        if not shipper:
+            raise responses.PERMISSION_DENIED
+
+        if len(request.data) != 2 \
+                or "order" not in request.data \
+                or "distance" not in request.data:
+            raise responses.BAD_REQUEST
+
+        order = self.get_order(request.data["order"])
+        if not order:
+            raise responses.NOT_FOUND
+
+        distance = float(request.data["distance"])
+        if distance < 0:
+            raise responses.BAD_REQUEST
+
+        req_data = request.data.dict()
+        # should base on distance (handle later)
+        req_data["estimate_time"] = "00:30"
+        req_data["cost"] = 5000 * distance
+        req_data["shipper"] = shipper.pk
+
+        serializer = serializers.GetOrderCreateSerializer(data=req_data)
+        if serializer.is_valid():
+            serializer.save()
+
+            # update order status
+            order.status = "confirm"
+            order.save()
+
+            return responses.client_success({
+                "get_order": serializer.data,
+                "shipper": ShipperSerializer(shipper).data,
+                "order": serializers.OrderSerializer(order).data,
+            })
+        else:
+            return responses.client_error({
+                "errors": serializer.errors
+            })
+
+    def put(self, request, *args, **kwargs):
+        shipper = self.get_shipper(request.user)
+        if not shipper:
+            raise responses.PERMISSION_DENIED
+
+        # verify params
+        if len(request.data) != 1 \
+                or "is_successful" not in request.data \
+                or "get_order_id" not in kwargs:
+            raise responses.BAD_REQUEST
+
+        taken_order = self.get_taken_order(kwargs["get_order_id"])
+
+        serializer = serializers.GetOrderSerializer(taken_order, request.data)
+        if serializer.is_valid():
+            ins = serializer.save()
+
+            # update order and shipper data
+            # if delivery successfully
+            # prevent shipper confirm multi times
+            # to get more cost
+            if ins.is_successful \
+                    and ins.order.status != "done":
+                ins.order.status = "done"
+                ins.order.save()
+
+                shipper.income += ins.cost
+                shipper.save()
+
+            return responses.client_success({
+                "get_order": serializer.data,
+                "shipper": ShipperSerializer(shipper).data,
+                "order": serializers.OrderSerializer(ins.order).data,
+            })
+        else:
+            return responses.client_error({
+                "errors": serializer.errors
+            })
+
+
+class PaymentAPI(
+    RetrieveAPIView,
+    CreateAPIView,
+    CustomerMixin,
+    ShipperMixin,
+    StoreMixin,
+    OrderMixin
+):
+
+    permissions_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        customer = self.get_customer(request.user)
+        if not customer:
+            raise responses.PERMISSION_DENIED

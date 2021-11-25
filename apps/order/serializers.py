@@ -67,3 +67,50 @@ class OrderItemExtraSerializer(serializers.ModelSerializer):
             'item_extra',
             'amount'
         ]
+
+
+class GetOrderCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+
+        model = models.GetOrder
+        fields = '__all__'
+        # read_only_fields = [
+        #     'cost',
+        #     'estimate_time'
+        # ]
+        extra_kwargs = {
+            'estimate_time': {'format': '%H:%M'}
+        }
+
+
+class GetOrderSerializer(serializers.ModelSerializer):
+
+    class Meta:
+
+        model = models.GetOrder
+        fields = '__all__'
+        read_only_fields = [
+            'order',
+            'shipper',
+            'cost',
+            'distance',
+            'estimate_time'
+        ]
+
+
+class PaymentCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+
+        model = models.Payment
+        fields = '__all__'
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+
+        model = models.Payment
+        fields = '__all__'
+        read_only_fields = '__all__'

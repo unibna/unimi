@@ -1,6 +1,6 @@
 from apps.account.models import (
     Customer, CustomerAddress,
-    Employee
+    Employee, Shipper
 )
 from apps.account.serializers import CustomerAddressSerializer
 from apps.core import responses
@@ -56,5 +56,14 @@ class CustomerMixin:
     def get_customer_address(self, pk=None):
         try:
             return CustomerAddress.objects.get(pk=pk)
+        except:
+            return None
+
+
+class ShipperMixin:
+
+    def get_shipper(self, user=None):
+        try:
+            return Shipper.objects.get(user=user)
         except:
             return None

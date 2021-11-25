@@ -5,3 +5,4 @@ from apps.order.models import *
 admin.site.register(Order)
 admin.site.register(OrderItem)
 admin.site.register(OrderItemExtra)
+admin.site.register(GetOrder)
