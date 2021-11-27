@@ -11,6 +11,9 @@ ITEM_FOLDER = 'store/item/'
 ITEM_EXTRA_FOLDER = 'store/item_extra/'
 LOGO_FOLDER = 'store/logo/'
 
+DEFAULT_ITEM = 'store/item/default-item.png'
+DEFAULT_EXTRA = 'store/item_extra/default-extra.png'
+DEFAULT_LOGO = 'store/logo/default-logo.png'
 
 class StoreCategory(models.Model):
 
@@ -32,7 +35,7 @@ class Store(models.Model):
     email = models.EmailField(max_length=64, null=True)
     phone = models.CharField(max_length=11, null=True)
     description = models.CharField(max_length=512, null=True)
-    logo = models.ImageField(upload_to=LOGO_FOLDER, null=True, blank=True)
+    logo = models.ImageField(upload_to=LOGO_FOLDER, default=DEFAULT_LOGO, null=True, blank=True)
     address = models.CharField(max_length=128, null=True)
     # location = PointField(null=True)
     logo = models.ImageField(upload_to=LOGO_FOLDER, null=True)
@@ -87,7 +90,7 @@ class Item(models.Model):
     menu = models.ForeignKey(Menu, on_delete=models.CASCADE)
     name = models.CharField(max_length=128, null=True)
     is_active = models.BooleanField(default=False)
-    image = models.ImageField(upload_to=ITEM_FOLDER, null=True, blank=True)
+    image = models.ImageField(upload_to=ITEM_FOLDER, default=DEFAULT_ITEM, null=True, blank=True)
     price = models.FloatField(default=0)
     rating = models.FloatField(default=0)
     created = models.DateTimeField(auto_now_add=True)
@@ -112,7 +115,7 @@ class IteamExtra(models.Model):
     name = models.CharField(max_length=64, null=True)
     value = models.CharField(max_length=128, null=True)
     price = models.FloatField(default=0)
-    image = models.ImageField(upload_to=ITEM_EXTRA_FOLDER, null=True, blank=True)
+    image = models.ImageField(upload_to=ITEM_EXTRA_FOLDER, default=DEFAULT_EXTRA, null=True, blank=True)
     is_active = models.BooleanField(default=False)
 
     # fix the typing error of class name
