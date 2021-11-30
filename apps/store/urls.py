@@ -7,19 +7,23 @@ router = SimpleRouter()
 
 
 urlpatterns = [
+    # store category
+    path('category', views.StoreCategoryAPI.as_view()),
+    path('category/<int:category_id>', views.StoreCategoryAPI.as_view()),
+
     # store
-    path('store/', views.StoreAPI.as_view()),
+    path('store', views.StoreAPI.as_view()),
     path('store/<int:store_id>', views.StoreAPI.as_view()),
 
     # join store
     path('store/join', views.JoinStoreAPI.as_view()),
 
     # menu
-    path('menu/', views.MenuAPI.as_view()),
+    path('menu', views.MenuAPI.as_view()),
     path('menu/<int:menu_id>', views.MenuAPI.as_view()),
 
     # item
-    path('item/', views.ItemAPI.as_view()),
+    path('item', views.ItemAPI.as_view()),
     path('item/<int:item_id>', views.ItemAPI.as_view()),
 
     # extra group

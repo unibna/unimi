@@ -1,5 +1,5 @@
 from rest_framework.exceptions import NotFound
-from rest_framework.generics import RetrieveUpdateAPIView, CreateAPIView
+from rest_framework.generics import RetrieveAPIView, RetrieveUpdateAPIView, CreateAPIView
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.settings import reload_api_settings
@@ -20,7 +20,8 @@ from apps.store.models import (
     ItemExtraGroup,
     JoinStore,
     Store,
-    Menu, Item
+    Menu, Item,
+    StoreCategory
 )
 from apps.store.mixins import (
     ItemMixin,
@@ -28,6 +29,53 @@ from apps.store.mixins import (
     MenuMixin,
 )
 from apps.core import responses
+
+
+class StoreCategoryAPI(
+    RetrieveUpdateAPIView,
+    EmployeeMixin,
+    StoreMixin,
+):
+
+    serializer_class = serializers.StoreCategorySerializer
+
+    def get_object(self, pk=None):
+        try:
+            return StoreCategory.objects.get(pk=pk)
+        except:
+            return None
+
+    def get(self, request, *args, **kwargs):
+        if "category_id" in kwargs:
+            res = self.retrieve_category(request, *args, **kwargs)
+        else:
+            res = self.list(request, *args, **kwargs)
+
+        return responses.client_success(res)
+
+    def retrieve_category(self, request, *args, **kwargs):
+        cat = self.get_object(kwargs["category_id"])
+        if not cat:
+            raise responses.NOT_FOUND
+
+        stores = [
+            serializers.StoreSerializer(store).data for store in cat.store_set.all()
+        ]
+        for i in range(len(stores)):
+            stores[i].pop("secret_key")
+
+        res = {}
+        res["store_category"] = serializers.StoreCategorySerializer(cat).data
+        res["store_category"]["stores"] = stores
+        return res
+
+    def list(self, request, *args, **kwargs):
+        cat_list = StoreCategory.objects.all()
+        return {
+            "store_categories": [
+                serializers.StoreCategorySerializer(cat).data for cat in cat_list
+            ]
+        }
 
 
 class StoreAPI(

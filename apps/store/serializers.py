@@ -2,12 +2,21 @@ from rest_framework import serializers
 
 from apps.account import models
 from apps.store.models import (
-    Store,
+    Store, StoreCategory,
     JoinStore,
     Menu, Item,
     ItemExtraGroup, IteamExtra
 )
 from apps.core import responses
+
+
+class StoreCategorySerializer(serializers.ModelSerializer):
+
+    class Meta:
+
+        model = StoreCategory
+        fields = '__all__'
+        read_only_fields = ['slug']
 
 
 class StoreCreateSerializer(serializers.ModelSerializer):

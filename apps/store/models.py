@@ -18,7 +18,7 @@ DEFAULT_LOGO = 'store/logo/default-logo.png'
 class StoreCategory(models.Model):
 
     name = models.CharField(max_length=32, unique=True)
-    slug = models.SlugField(max_length=32, unique=True)
+    slug = models.SlugField(max_length=32, unique=True, null=True, blank=True)
 
     def __str__(self):
         return self.name
