@@ -6,7 +6,8 @@ from apps.store.models import (
     JoinStore,
     Store,
     Menu, Item,
-    ItemExtraGroup, IteamExtra
+    ItemExtraGroup, IteamExtra,
+    StoreCategory
 )
 from apps.core import responses
 
@@ -40,10 +41,15 @@ class StoreMixin:
 
     def is_store_owner(self, store, owner):
         try:
-            if store.owner == owner:
-                return True
+            return store.owner == owner
         except:
             return False
+
+    def get_store_category(self, pk=None):
+        try:
+            return StoreCategory.objects.get(pk=pk)
+        except:
+            return None
 
 
 class MenuMixin:

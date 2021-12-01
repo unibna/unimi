@@ -104,6 +104,9 @@ class StoreAPI(
         stores = []
         for store in store_list:
             store = serializers.StoreSerializer(store).data
+            store["store_category"] = serializers.StoreCategorySerializer(
+                self.get_store_category(store["store_category"])
+            ).data
             store.pop("secret_key")
             stores.append(store)
         return {"stores": stores}
@@ -116,6 +119,10 @@ class StoreAPI(
 
         res = {}
         res["store"] = serializers.StoreSerializer(store).data
+        if res["store"]["store_category"]:
+            res["store"]["store_category"] = serializers.StoreCategorySerializer(
+                self.get_store_category(res["store"]["store_category"])
+            ).data
         if store.owner != empl:
             res["store"].pop("secret_key")
 

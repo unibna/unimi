@@ -47,7 +47,7 @@ class Store(models.Model):
     store_category = models.ForeignKey(
         StoreCategory,
         on_delete=models.CASCADE,
-        null=True
+        default=11,
     )
     is_valid = models.BooleanField(default=False)
 
