@@ -312,13 +312,18 @@ class MenuAPI(
         success_items = []
         failed_items = []
         for item in items:
-            print(type(item), item)
-            item["menu"] = menu
-            item = Item(**item)
-            item.save()
-            success_items.append(item)
-
+            try:
+                item["menu"] = menu
+                item = Item(**item)
+                item.save()
+            except:
+                failed_items.append(item)
+            else:
+                success_items.append(item)
+        
+        print(f"Success {len(success_items)}")
         print(success_items)
+        print(f"Failed {len(failed_items)}")
         print(failed_items)
 
         item_data = [
