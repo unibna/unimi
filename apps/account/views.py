@@ -106,6 +106,12 @@ class UserAPI(RetrieveUpdateAPIView):
             if user.account_role == "customer":
                 cus = Customer.objects.get(user=user)
                 account_role_data = serializers.CustomerSerializer(cus).data
+                
+                # get cusomter addresses
+                addr_list = cus.customeraddress_set.all()
+                account_role_data["customer_addresses"] = [
+                    serializers.CustomerAddressSerializer(addr).data for addr in addr_list
+                ]
             elif user.account_role == "employee":
                 empl = Employee.objects.get(user=user)
                 account_role_data = serializers.EmployeeSerializer(empl).data

@@ -1,8 +1,7 @@
-from rest_framework.exceptions import NotFound
+import json
 from rest_framework.generics import RetrieveAPIView, RetrieveUpdateAPIView, CreateAPIView
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework.settings import reload_api_settings
 
 from apps.account.models import (
     Employee,
@@ -277,21 +276,55 @@ class MenuAPI(
 
     def post(self, request, *args, **kwargs):
         owner = self.get_owner(request.user)
-        store = Store.objects.get(owner=owner)
+        store = Store.objects.filter(owner=owner)
+        if not store:
+            raise responses.BAD_REQUEST
+        store = store[0]
 
         req_data = request.data.dict()
         req_data["store"] = store.pk
 
         serializer = serializers.MenuCreateSerialzer(data=req_data)
         if serializer.is_valid():
-            print(type(serializer.save()), serializer.save())
-            return responses.client_success({
-                "menu": serializer.data
+            menu = serializer.save()
+            print(menu)
+
+            res = {}
+            res["menu"] = serializer.data
+            if "items" in request.data:
+                res["menu"]["items"] = self.create_menu_items(request, menu)
+
+            return responses.client_success(res)
+        else:
+            raise responses.client_error({
+                "errors": serializer.errors
             })
 
-        raise responses.client_error({
-            "errors": serializer.errors
-        })
+    def create_menu_items(self, request, menu):
+        # parse items value to dict
+        try:
+            items = json.loads(request.data["items"])
+        except:
+            raise responses.client_error({
+                "errors": "Cannot parse items value - Invalid json"
+            })
+
+        success_items = []
+        failed_items = []
+        for item in items:
+            print(type(item), item)
+            item["menu"] = menu
+            item = Item(**item)
+            item.save()
+            success_items.append(item)
+
+        print(success_items)
+        print(failed_items)
+
+        item_data = [
+            serializers.ItemSerializer(item).data for item in success_items
+        ]
+        return item_data
 
     def put(self, request, *args, **kwargs):
         owner = self.get_owner(request.user)
