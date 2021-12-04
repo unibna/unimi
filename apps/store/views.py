@@ -116,9 +116,12 @@ class StoreAPI(
         store = self.get_store(pk=pk)
         if not store:
             raise responses.NOT_FOUND
+        menu_list = store.menu_set.all()
 
         res = {}
         res["store"] = serializers.StoreSerializer(store).data
+        res["store"]["menus"] = []
+
         if res["store"]["store_category"]:
             res["store"]["store_category"] = serializers.StoreCategorySerializer(
                 self.get_store_category(res["store"]["store_category"])
@@ -126,15 +129,14 @@ class StoreAPI(
         if store.owner != empl:
             res["store"].pop("secret_key")
 
-        if "menu_id" in request.GET:
-            pass
-        elif "item_id" in request.GET:
-            pass
-        else:
-            res["store"]["menus"] = [
-                serializers.MenuSerializer(menu).data for menu in store.menu_set.all()
+        for menu in menu_list:
+            item_list = menu.item_set.all()
+            menu_data = serializers.MenuSerializer(menu).data
+            menu_data["items"] = [
+                serializers.ItemSerializer(item).data for item in item_list
             ]
-        
+            res["store"]["menus"].append(menu_data)
+
         return res
 
     def post(self, request, *args, **kwargs):

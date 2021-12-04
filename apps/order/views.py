@@ -231,6 +231,9 @@ class OrderItemAPI(
             order.total += order_item.amount
             order.save()
 
+            payment = Payment(order=order)
+            payment.save()
+
             return responses.client_success({
                 "order_item": serializer.data
             })
@@ -615,7 +618,7 @@ class GetOrderAPI(
 
 
 class PaymentAPI(
-    RetrieveAPIView,
+    RetrieveUpdateAPIView,
     CreateAPIView,
     CustomerMixin,
     ShipperMixin,
@@ -624,11 +627,85 @@ class PaymentAPI(
 ):
 
     permissions_classes = [IsAuthenticated]
+    serializer_class = serializers.PaymentSerializer
 
     def get(self, request, *args, **kwargs):
-        return super().get(request, *args, **kwargs)
+        if "order" in request.GET:
+            res = self.retrieve(request, *args, **kwargs)
+        else:
+            res = self.list(request, *args, **kwargs)
 
-    def post(self, request, *args, **kwargs):
+        return responses.client_success(res)
+
+    def retrieve(self, request, *args, **kwargs):
+        order = self.get_order(request.GET["order"])
+        if not order:
+            raise responses.NOT_FOUND
+
+        # get payment
+        try:
+            payment = Payment.objects.get(order=order)
+        except:
+            raise responses.NOT_FOUND
+
+        return {
+            "payment": serializers.PaymentSerializer(payment).data
+        }
+
+    def list(self, request, *args, **kwargs):
         customer = self.get_customer(request.user)
         if not customer:
             raise responses.PERMISSION_DENIED
+
+        payment_list = Payment.objects.filter(order__customer=customer)
+
+        return {
+            "payments": [
+                serializers.PaymentSerializer(payment).data for payment in payment_list
+            ]
+        }
+
+    def put(self, request, *args, **kwargs):
+        customer = self.get_customer(request.user)
+        if not customer:
+            raise responses.PERMISSION_DENIED
+
+        if "order" not in request.data:
+            raise responses.BAD_REQUEST
+
+        # get order customer wanna pay
+        order = self.get_order(request.data["order"])
+        store = order.store
+        if not order:
+            raise responses.NOT_FOUND
+        elif order.customer != customer:
+            raise responses.PERMISSION_DENIED
+
+        # get payment
+        try:
+            payment = Payment.objects.get(order=order)
+            taken_order = GetOrder.objects.get(order=order)
+            shipper = taken_order.shipper
+        except:
+            raise responses.NOT_FOUND
+
+        # check if customer is affortable
+        cost = order.total + taken_order.cost
+        if customer.balance - cost < 0:
+            raise responses.client_error({
+                "errors": "Cannot pay this order"
+            })
+
+        payment.is_complete = True
+        payment.save()
+
+        # // increase store income
+        shipper.income += taken_order.cost
+        shipper.save()
+
+        customer.balance -= cost
+        customer.save()
+
+        return responses.client_success({
+            "payment": serializers.PaymentSerializer(payment).data
+        })

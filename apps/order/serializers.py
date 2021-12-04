@@ -113,4 +113,4 @@ class PaymentSerializer(serializers.ModelSerializer):
 
         model = models.Payment
         fields = '__all__'
-        read_only_fields = '__all__'
+        read_only_fields = ['created', 'order']
