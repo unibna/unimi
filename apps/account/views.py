@@ -29,7 +29,8 @@ from apps.store.models import (
     StoreCategory,
 )
 from apps.store.serializers import (
-    StoreSerializer
+    StoreSerializer,
+    StoreCategorySerializer
 )
 from apps.store.mixins import StoreMixin
 
@@ -121,12 +122,6 @@ class UserAPI(RetrieveUpdateAPIView):
                 account_role_data = serializers.ShipperSerializer(shipper).data
             data_res["user"]["account_role_info"] = account_role_data
 
-        return responses.client_success(data_res)
-
-    def update(self, request, *args, **kwargs):
-        user = self.get_object(kwargs['account_id'])
-
-        if not user:
             return responses.client_success({
                 "user": {}
             })
@@ -199,7 +194,9 @@ class EmployeeAPI(
 
         res["employee"]["store"] = StoreSerializer(store).data
         if store:
-            res["employee"]["store"]["store_category"] = StoreCategory.objects.get(pk=res["employee"]["store"]["store_category"]).name
+            res["employee"]["store"]["store_category"] = StoreCategorySerializer(
+                self.get_store_category(res["employee"]["store"]["store_category"])
+            ).data
             if not (empl and empl.user == request.user and store.owner == empl):
                 res["employee"]["store"].pop("secret_key")
 
@@ -217,7 +214,9 @@ class EmployeeAPI(
         res["store"] = StoreSerializer(store).data
         empl = self.get_employee(request.user)
         if store:
-            res["store"]["store_category"] = StoreCategory.objects.get(pk=res["store"]["store_category"]).name
+            res["store"]["store_category"] = StoreCategorySerializer(
+                self.get_store_category(res["store"]["store_category"])
+            ).data
             if not store.owner == empl:
                 res["store"].pop("secret_key")
 
