@@ -105,9 +105,7 @@ class StoreAPI(
         stores = []
         for store in store_list:
             store = serializers.StoreSerializer(store).data
-            store["store_category"] = serializers.StoreCategorySerializer(
-                self.get_store_category(store["store_category"])
-            ).data
+            store["store_category"] = self.get_store_category(store["store_category"]).name
             store.pop("secret_key")
             stores.append(store)
         return {"stores": stores}
@@ -124,9 +122,7 @@ class StoreAPI(
         res["store"]["menus"] = []
 
         if res["store"]["store_category"]:
-            res["store"]["store_category"] = serializers.StoreCategorySerializer(
-                self.get_store_category(res["store"]["store_category"])
-            ).data
+            res["store"]["store_category"] = self.get_store_category(res["store"]["store_category"]).name
         if store.owner != empl:
             res["store"].pop("secret_key")
 
@@ -155,9 +151,7 @@ class StoreAPI(
 
             res = {}
             res["store"] = serializers.StoreSerializer(store).data
-            res["store"]["store_category"] = serializers.StoreCategorySerializer(
-                self.get_store_category(res["store"]["store_category"])
-            ).data
+            res["store"]["store_category"] = self.get_store_category(res["store"]["store_category"]).name
 
             return responses.client_success(res)
         else:
@@ -176,9 +170,7 @@ class StoreAPI(
 
             res = {}
             res["store"] = serializers.StoreSerializer(store).data
-            res["store"]["store_category"] = serializers.StoreCategorySerializer(
-                self.get_store_category(res["store"]["store_category"])
-            ).data
+            res["store"]["store_category"] = self.get_store_category(res["store"]["store_category"]).name
 
             return responses.client_success(res)
         else:
