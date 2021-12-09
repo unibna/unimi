@@ -23,4 +23,3 @@ urlpatterns = [
     path('payment', views.PaymentAPI.as_view()),
     path('payment/<int:payment_id>', views.PaymentAPI.as_view()),
 ]
-urlpatterns

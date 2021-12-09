@@ -34,5 +34,6 @@ urlpatterns = [
     path('item-extra', views.ItemExtraAPI.as_view()),
     path('item-extra/<int:item_extra_id>', views.ItemExtraAPI.as_view()),
 
+    # search
+    path('search', views.StoreSearchAPI.as_view()),
 ]
-urlpatterns += router.urls

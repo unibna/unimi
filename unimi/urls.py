@@ -22,6 +22,9 @@ VERSION = 'v1'
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    path('', include('apps.dashboard.urls')),
+
     path(f'api/{VERSION}/', include('apps.account.urls')),
     path(f'api/{VERSION}/', include('apps.store.urls')),
     path(f'api/{VERSION}/', include('apps.order.urls')),

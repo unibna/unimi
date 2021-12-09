@@ -1,11 +1,8 @@
-from django.shortcuts import resolve_url
-from rest_framework import permissions
-from rest_framework.exceptions import NotFound
+import json
+
 from rest_framework.generics import RetrieveAPIView, RetrieveUpdateAPIView, CreateAPIView
-from rest_framework.permissions import NOT, OR, IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework.serializers import raise_errors_on_nested_writes
-from apps.account.models import Employee
 from apps.account.serializers import CustomerSerializer, ShipperSerializer
 
 from apps.order import serializers
@@ -28,6 +25,7 @@ class OrderAPI(
     CustomerMixin,
     EmployeeMixin,
     StoreMixin,
+    ItemMixin,
 ):
 
     permissions_classes = [IsAuthenticated]
@@ -88,14 +86,62 @@ class OrderAPI(
 
         serializer = serializers.OrderCreateSerializer(data=req_data)
         if serializer.is_valid():
-            serializer.save()
-            return responses.client_success({
-                "order": serializer.data
-            })
+            order = serializer.save()
+
+            res = {}
+            res["order"] = serializer.data
+
+            if "order_items" in request.data:
+                order_items = self.create_order_item(request, order)
+                res["order"]["order_items"] = [
+                    serializers.OrderItemSerializer(item).data for item in order_items
+                ]
+
+                for order_item in order_items:
+                    order.total += order_item.amount
+                res["order"]["total"] = order.total
+                order.save()
+
+            return responses.client_success(res)
         else:
             raise responses.client_error({
                 "errors": serializer.errors
             })
+
+    def create_order_item(self, request, order):
+        try:
+            order_items = json.loads(request.data["order_items"])
+        except:
+            raise responses.client_error({
+                "errors": "Cannot parse order items - Invalid Json"
+            })
+
+        success_list = []
+        fail_list = []
+
+        # verify valid order item
+        for order_item in order_items:
+            item = self.get_item(order_item["item"])
+            if  item and order_item["quantity"] > 0:
+                order_item = OrderItem(
+                    order=order,
+                    item=item,
+                    quantity=order_item["quantity"],
+                    amount=item.price*order_item["quantity"]
+                )
+                order_item.save()
+                success_list.append(order_item)
+            else:
+                fail_list.append(order_item)
+
+        # logging
+        print(f"Order - Success - {len(success_list)}")
+        print(success_list)
+        print(f"Order - Fail - {len(fail_list)}")
+        print(fail_list)
+
+        return success_list
+
 
     def put(self, request, *args, **kwargs):
         if "order_id" not in kwargs:

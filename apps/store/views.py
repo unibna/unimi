@@ -2,6 +2,8 @@ import json
 from rest_framework.generics import RetrieveAPIView, RetrieveUpdateAPIView, CreateAPIView
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.filters import SearchFilter, OrderingFilter
+from django.db.models import Q
+from apps import store
 
 from apps.account.models import (
     Employee,
@@ -152,7 +154,7 @@ class StoreAPI(
             empl.save()
 
             return responses.client_success({
-                "store": serializer.data,
+                "store": serializers.StoreSerializer(store).data,
             })
         else:
             raise responses.client_error({
@@ -287,7 +289,6 @@ class MenuAPI(
         serializer = serializers.MenuCreateSerialzer(data=req_data)
         if serializer.is_valid():
             menu = serializer.save()
-            print(menu)
 
             res = {}
             res["menu"] = serializer.data
@@ -625,3 +626,40 @@ class ItemExtraAPI(
             raise responses.client_error({
                 "errors": serializer.errors
             })
+
+
+class StoreSearchAPI(
+        RetrieveAPIView,
+        StoreMixin,
+        ItemMixin,
+        MenuMixin
+):
+
+    def get(self, request, *args, **kwargs):
+        if "keyword" not in request.GET and len(request.GET) != 1:
+            raise responses.BAD_REQUEST
+
+        key_word = request.GET["keyword"]
+
+        store_result = Store.objects.filter(
+            Q(name__contains=key_word) | Q(store_category__name__contains=key_word),
+            # is_valid=True,
+        )
+        item_result = Item.objects.filter(
+            is_active=True,
+            name__contains=key_word
+        )
+
+        res = {}
+        res["stores"] = [
+            serializers.StoreSerializer(store).data for store in store_result
+        ]
+        for i in range(len(res["stores"])):
+            res["stores"][i].pop("secret_key")
+            res["stores"][i]["store_category"] = StoreCategory.objects.get(pk=res["stores"][i]["store_category"]).name
+
+        res['items'] = [
+            serializers.ItemSerializer(item).data for item in item_result
+        ]
+
+        return responses.client_success(res)
