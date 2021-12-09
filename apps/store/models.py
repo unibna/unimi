@@ -37,8 +37,6 @@ class Store(models.Model):
     description = models.CharField(max_length=512, null=True)
     logo = models.ImageField(upload_to=LOGO_FOLDER, default=DEFAULT_LOGO, null=True, blank=True)
     address = models.CharField(max_length=128, null=True)
-    # location = PointField(null=True)
-    logo = models.ImageField(upload_to=LOGO_FOLDER, null=True)
     open_time = models.TimeField(null=True)
     close_time = models.TimeField(null=True)
     rating = models.FloatField(default=0, null=True)
@@ -50,6 +48,7 @@ class Store(models.Model):
         default=11,
     )
     is_valid = models.BooleanField(default=False)
+    # location = PointField(null=True)
 
     def __str__(self):
         return self.name
