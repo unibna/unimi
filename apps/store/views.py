@@ -153,9 +153,13 @@ class StoreAPI(
             empl.employee_role = "owner"
             empl.save()
 
-            return responses.client_success({
-                "store": serializers.StoreSerializer(store).data,
-            })
+            res = {}
+            res["store"] = serializers.StoreSerializer(store).data
+            res["store"]["store_category"] = serializers.StoreCategorySerializer(
+                self.get_store_category(res["store"]["store_category"])
+            ).data
+
+            return responses.client_success(res)
         else:
             raise responses.client_error({
                 "errors": serializer.errors
@@ -168,10 +172,15 @@ class StoreAPI(
 
         serializer = serializers.StoreSerializer(store, data=request.data)
         if serializer.is_valid(raise_exception=True):
-            serializer.save()
-            return responses.client_success({
-                "store": serializer.data
-            })
+            store = serializer.save()
+
+            res = {}
+            res["store"] = serializers.StoreSerializer(store).data
+            res["store"]["store_category"] = serializers.StoreCategorySerializer(
+                self.get_store_category(res["store"]["store_category"])
+            ).data
+
+            return responses.client_success(res)
         else:
             raise responses.client_error({
                 "errors": serializer.errors

@@ -26,6 +26,7 @@ from apps.core import responses
 from apps.store.models import (
     Store,
     JoinStore,
+    StoreCategory,
 )
 from apps.store.serializers import (
     StoreSerializer
@@ -195,10 +196,12 @@ class EmployeeAPI(
             store = Store.objects.get(owner=empl)
         except:
             store = None
-            
+
         res["employee"]["store"] = StoreSerializer(store).data
-        if store and not (empl and empl.user == request.user and store.owner == empl):
-            res["employee"]["store"].pop("secret_key")
+        if store:
+            res["employee"]["store"]["store_category"] = StoreCategory.objects.get(pk=res["employee"]["store"]["store_category"]).name
+            if not (empl and empl.user == request.user and store.owner == empl):
+                res["employee"]["store"].pop("secret_key")
 
         return responses.client_success(res)
 
@@ -213,8 +216,11 @@ class EmployeeAPI(
         # get store data
         res["store"] = StoreSerializer(store).data
         empl = self.get_employee(request.user)
-        if store and not store.owner == empl:
-            res["store"].pop("secret_key")
+        if store:
+            res["store"]["store_category"] = StoreCategory.objects.get(pk=res["store"]["store_category"]).name
+            if not store.owner == empl:
+                res["store"].pop("secret_key")
+
 
         # get employee
         employee_list = [ins.employee for ins in JoinStore.objects.filter(store=store)]
