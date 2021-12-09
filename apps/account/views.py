@@ -176,18 +176,26 @@ class EmployeeAPI(
         res = {}
 
         # classify action
+        # list employee in a store by store id
         if "store_id" in request.GET:
             return self.get_store_employee(request, *args, **kwargs)
 
-        # get employee data
+        # get employee data by id
         if "employee_id" in kwargs:
             empl = self.get_object(kwargs["employee_id"])
-        else:
+        # get employee data by request user
+        elif not request.user.is_anonymous:
             empl = self.get_employee(request.user)
+        else:
+            raise responses.PERMISSION_DENIED
         res["employee"] = serializers.EmployeeSerializer(empl).data
 
         # get store data
-        store = self.get_employee_store(empl)
+        try:
+            store = Store.objects.get(owner=empl)
+        except:
+            store = None
+            
         res["employee"]["store"] = StoreSerializer(store).data
         if store and not (empl and empl.user == request.user and store.owner == empl):
             res["employee"]["store"].pop("secret_key")
