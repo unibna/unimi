@@ -122,10 +122,6 @@ class UserAPI(RetrieveUpdateAPIView):
                 account_role_data = serializers.ShipperSerializer(shipper).data
             data_res["user"]["account_role_info"] = account_role_data
 
-            return responses.client_success({
-                "user": {}
-            })
-
         # check permission
         # if request user is user or admin => OK
         if request.user == user:
