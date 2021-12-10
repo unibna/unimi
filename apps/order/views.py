@@ -142,7 +142,6 @@ class OrderAPI(
 
         return success_list
 
-
     def put(self, request, *args, **kwargs):
         if "order_id" not in kwargs:
             raise responses.BAD_REQUEST

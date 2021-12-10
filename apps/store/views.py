@@ -170,8 +170,11 @@ class StoreAPI(
         owner = self.get_owner(request.user)
         store = self.get_store(kwargs['store_id'])
 
-        serializer = serializers.StoreSerializer(store, data=request.data)
-        if serializer.is_valid(raise_exception=True):
+        if store.owner != owner:
+            raise responses.PERMISSION_DENIED
+
+        serializer = serializers.StoreSerializer(instance=store, data=request.data)
+        if serializer.is_valid():
             store = serializer.save()
 
             res = {}
