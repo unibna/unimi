@@ -172,6 +172,8 @@ class StoreAPI(
 
         if store.owner != owner:
             raise responses.PERMISSION_DENIED
+        elif not store or not owner:
+            raise responses.BAD_REQUEST
 
         serializer = serializers.StoreSerializer(instance=store, data=request.data)
         if serializer.is_valid():
