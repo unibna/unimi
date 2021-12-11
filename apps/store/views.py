@@ -297,7 +297,10 @@ class MenuAPI(
             raise responses.BAD_REQUEST
         store = store[0]
 
-        req_data = request.data.dict()
+        if type(request.data) == dict:
+            req_data = request.data
+        else:
+            req_data = request.data.dict()
         req_data["store"] = store.pk
 
         serializer = serializers.MenuCreateSerialzer(data=req_data)
@@ -306,6 +309,7 @@ class MenuAPI(
 
             res = {}
             res["menu"] = serializer.data
+            res["menu"]["items"] = []
             if "items" in request.data:
                 res["menu"]["items"] = self.create_menu_items(request, menu)
 
@@ -318,7 +322,10 @@ class MenuAPI(
     def create_menu_items(self, request, menu):
         # parse items value to dict
         try:
-            items = json.loads(request.data["items"])
+            if type(request.data) == dict:
+                items = request.data["items"]
+            else:
+                items = json.loads(request.data["items"])
         except:
             raise responses.client_error({
                 "errors": "Cannot parse items value - Invalid json"
