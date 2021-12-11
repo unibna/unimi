@@ -1,6 +1,5 @@
 from datetime import date
 import logging
-import re
 
 from django.contrib.auth.hashers import make_password
 from django.db.models.query import RawQuerySet

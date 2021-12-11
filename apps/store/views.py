@@ -308,7 +308,7 @@ class MenuAPI(
             menu = serializer.save()
 
             res = {}
-            res["menu"] = serializer.data
+            res["menu"] = serializers.MenuSerializer(menu).data
             res["menu"]["items"] = []
             if "items" in request.data:
                 res["menu"]["items"] = self.create_menu_items(request, menu)
@@ -363,9 +363,15 @@ class MenuAPI(
         serializer = serializers.MenuSerializer(menu, data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
-            return responses.client_success({
-                "menu": serializer.data
-            })
+
+            items = menu.item_set.all()
+            res = {}
+            res["menu"] = serializers.MenuSerializer(menu).data
+            res["menu"]["items"] = [
+                serializers.ItemSerializer(item).data for item in items
+            ]
+
+            return responses.client_success(res)
         else:
             raise responses.client_error({
                 "errors": serializer.errors
