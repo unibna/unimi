@@ -357,7 +357,7 @@ class MenuAPI(
         owner = self.get_owner(request.user)
         menu = self.get_menu(kwargs['menu_id'])
 
-        if menu.store in Store.objects.filter(owner=owner):
+        if menu.store not in Store.objects.filter(owner=owner):
             raise responses.PERMISSION_DENIED
 
         serializer = serializers.MenuSerializer(menu, data=request.data)
