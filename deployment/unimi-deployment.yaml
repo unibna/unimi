@@ -17,3 +17,9 @@ spec:
         image: unibna/unimi:v1
         ports:
         - containerPort: 8000
+        volumeMounts:
+        - mountPath: /unimi
+          name: unimi-data
+      volumes:
+        - name: unimi-data
+          emptyDir: {}
