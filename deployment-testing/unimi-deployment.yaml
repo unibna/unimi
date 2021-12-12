@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: unimi
+spec:
+  selector:
+    matchLabels:
+      app: unimi
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: unimi
+    spec:
+      containers:
+      - name: unimi
+        image: unibna/unimi:v1
+        ports:
+        - containerPort: 8000
+      volumes:
+      - name: unimi-persistent-volume
+        mountPath: /unimi
