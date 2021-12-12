@@ -19,7 +19,7 @@ spec:
         - containerPort: 8000
         volumeMounts:
         - mountPath: /unimi
-          name: unimi-data
+          name: unimi-cache
       volumes:
-        - name: unimi-data
+        - name: unimi-cache
           emptyDir: {}
