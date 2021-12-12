@@ -14,9 +14,9 @@ spec:
     spec:
       containers:
       - name: unimi
-        image: unibna/unimi:v1
+        image: unibna/unimi:v1.1
         ports:
         - containerPort: 8000
       volumes:
       - name: unimi-persistent-volume
-        mountPath: /unimi
+        mountPath: /unimi/volume

@@ -11,4 +11,4 @@ spec:
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: "/home/g18520976/unimi-volume"
+    path: "/unimi-volume"
