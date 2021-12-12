@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: unimi-fe-service
+spec:
+  selector:
+    app: unimi-fe
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 3000

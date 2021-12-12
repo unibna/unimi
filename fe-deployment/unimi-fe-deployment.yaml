@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: unimi-fe
+spec:
+  selector:
+    matchLabels:
+      app: unimi-fe
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: unimi-fe
+    spec:
+      containers:
+      - name: unimi-fe
+        image: unibna/unimi-fe:v1
+        ports:
+        - containerPort: 3000
