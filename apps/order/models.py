@@ -31,7 +31,7 @@ class Order(models.Model):
 
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     store = models.ForeignKey(Store, on_delete=models.CASCADE)
-    customer_address = models.ForeignKey(CustomerAddress, on_delete=models.CASCADE, blank=True)
+    customer_address = models.CharField(max_length=256, null=True, blank=True)
     total = models.FloatField(default=0)
     status = models.CharField(max_length=32, choices=order_status_choices, default="created")
     created = models.DateTimeField(auto_now_add=True)

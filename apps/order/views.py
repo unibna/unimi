@@ -77,19 +77,12 @@ class OrderAPI(
         req_data = request.data.dict()
         req_data["customer"] = customer.pk
 
-        # verify customer address
-        addr = self.get_customer_address(req_data["customer_address"])
-        if addr.customer != customer:
-            raise responses.client_error({
-                "errors": "Not assigned address"
-            })
-
         serializer = serializers.OrderCreateSerializer(data=req_data)
         if serializer.is_valid():
             order = serializer.save()
 
             res = {}
-            res["order"] = serializer.data
+            res["order"] = serializers.OrderSerializer(order).data
 
             if "order_items" in request.data:
                 order_items = self.create_order_item(request, order)
