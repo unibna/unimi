@@ -74,7 +74,10 @@ class OrderAPI(
         if not customer:
             raise responses.PERMISSION_DENIED
 
-        req_data = request.data.dict()
+        if type(request.data) != dict:
+            request.data = request.data.dict()
+
+        req_data = request.data
         req_data["customer"] = customer.pk
 
         serializer = serializers.OrderCreateSerializer(data=req_data)
