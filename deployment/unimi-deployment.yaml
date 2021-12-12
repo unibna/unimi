@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
       - name: unimi
-        image: unibna/unimi:v1
+        image: unibna/unimi:v1.1
         ports:
         - containerPort: 8000
