@@ -106,7 +106,10 @@ class OrderAPI(
 
     def create_order_item(self, request, order):
         try:
-            order_items = json.loads(request.data["order_items"])
+            if type(request.data) == dict:
+                order_items = request.data["order_items"] 
+            else:
+                order_items = json.loads(request.data["order_items"])
         except:
             raise responses.client_error({
                 "errors": "Cannot parse order items - Invalid Json"
