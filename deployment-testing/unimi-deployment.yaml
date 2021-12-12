@@ -19,4 +19,4 @@ spec:
         - containerPort: 8000
       volumes:
       - name: unimi-persistent-volume
-        mountPath: /unimi/volume
+        mountPath: /unimi/volume/
