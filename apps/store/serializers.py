@@ -86,7 +86,8 @@ class ItemCreateSerializer(serializers.ModelSerializer):
             'menu',
             'name',
             'is_active',
-            'price'
+            'price',
+            'image',
         ]
         read_only_fields = ['id']
 

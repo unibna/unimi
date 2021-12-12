@@ -445,9 +445,9 @@ class ItemAPI(
 
         ser = serializers.ItemCreateSerializer(data=req_data)
         if ser.is_valid(raise_exception=True):
-            ser.save()
+            ins = ser.save()
             return responses.client_success({
-                "item": ser.data
+                "item": serializers.ItemSerializer(ins).data
             })
         else:
             raise responses.client_error({
@@ -466,7 +466,7 @@ class ItemAPI(
         if ser.is_valid():
             ser.save()
             return responses.client_success({
-                "item": ser.data
+                "item": serializers.ItemSerializer(item).data
             })
         else:
             raise responses.client_error({
